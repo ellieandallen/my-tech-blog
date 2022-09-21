@@ -1,0 +1,31 @@
+Step 1. Create a table in hiveCreate a table in hive to insert the above input sample data from the file to hive table.Syntax:
+
+hive> create table feedback(comments string);
+
+Step 2. Load data from the sample file
+
+hive> load data local inpath '*file_path/comments.txt' into table feedback;
+
+​Step 3. Convert comments into an array
+
+Now time to convert comments of feedback table into an array of string.Syntax:
+
+hive> select split(comments,' ') from feedback;
+
+The above split udf will return the below output["This","is","my","first","hive","tutorial,","which","is","known","as","hello","world","program","in","big","data",",","big","data","technologies","are","now","on","demand."]​
+
+Step 4. Use table generation udfNow time to return multiple row from the above array of string, and for that we have built in table generation UDTF explode function.Syntax:
+
+hive> select explode( split(comments,' ')) from feedback;
+
+Step 5. Final stepOk,Ok too late, let's put it all together and see the resultSyntax:
+
+hive> select word,count(*) from (select explode( split(comments,' ')) as word from feedback)tmp group by word;
+
+Or alternative one
+
+hive> SELECT word, COUNT(*) FROM feedback LATERAL VIEW explode(split(comments, ' ')) tmp as word GROUP BY word;
+
+That's it.
+
+source:http://www.javamakeuse.com/2016/10/word-count-program-using-hive-query.html
