@@ -1,0 +1,150 @@
+录音文本分段分类，需要极大地考虑上下文关系，因此在我将文本按说话人的对话，每一个来回按轮次进行分割后再进行分类，那么在一通完整通话录音里，录音分割的统计结果如下所示：
+count 4607
+mean  20.69
+std   14.83
+min   1
+25%   11
+50%   17
+75%   26
+max   144
+
+按轮次分割再按一通通话合并：df = df.groupby('path').agg({'label': list, 'predict': list}).reset_index()
+给轮次对话做分类的模型如下：
+import torch
+import numpy as np
+import pandas as pd
+from torch import nn
+from torch.optim import Adam
+from tqdm import tqdm
+from transformers import BertTokenizerFast, BertTokenizer, BertModel
+from transformers import GPT2Model, GPT2Config
+from time import time
+import sys, os
+
+
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+bert_model = BertModel.from_pretrained('/path/..')
+tokenizer = BertTokenizerFast.from_pretrained('/path/..')
+configuration = GPT2Config()
+gpt2_model = GPT2Model(configuration)
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+
+class Dataset(torch.utils.data.Dataset):
+    def __init__(self, df):
+        self.labels = [label for label in df['label']]
+        self.texts = [tokenizer(text, padding='max_length', max_length=64, truncation=True, return_tensors='pt') for text in df['content']]
+        
+    def classes(self):
+        return self.labels
+        
+    def __len__(self):
+        return len(self.labels)
+        
+    def get_batch_labels(self, idx):
+        return np.array(self.labels[idx])
+        
+    def get_batch_texts(self, idx):
+        return self.texts[idx]
+        
+    def __getitem__():
+        batch_texts = self.get_batch_texts(idx)
+        batch_y = self.get_batch_labels(idx)
+        
+        return batch_texts, batch_y
+        
+        
+start = time()
+df_train = df_train.sample(frac=1).reset_index(drop=True)
+# df_train = df_data.loc[: int(0.75 * len(df_data)), : ][['content', 'label']]
+# df_train, df_val, df_test = np.split(df.sample(frac=1, random_state=42), [int(.8 * len(df)), int(.9 * len(df))])
+        
+class SentenceMultiCls(nn.Module):
+    def __init__(self, dropout=0.1):
+        super(SentenceMultiCls, self).__init__()
+        self.bert = bert_model
+        self.dropout = nn.Dropout(dropout)
+        self.linear = nn.Linear(768, 20)
+        self.relu = nn.ReLU()
+        
+    def forward(self, input_id, mask):
+        pooled_output = self.bert(input_ids=input_id)[1]
+        output = self.dropout(pooled_output)
+        output = self.linear(output)
+        output = self.relu(output)
+        
+        return output
+
+
+def train(model, train_data, val_data, learning_rate, epochs, batch_size):
+    train, val = Dataset(train_data), Dataset(val_data)
+    
+    train_dataloader = torch.utils.data.Dataloader(train, batch_size, shuffle=True)
+    val_dataloader = torch.utils.data.Dataloader(val, batch_size)
+    
+    use_cuda = torch.cuda.is_available()
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    
+    criterion = nn.CrossEntropyLoss()
+    optimizer = Adam(model.parameters(), lr=learning_rate)
+    
+    if use_cuda:
+        criterion = criterion.cuda()
+        model = model.cuda()
+        
+    for epoch_num in range(epochs):
+        total_acc_train = 0
+        total_loss_train = 0
+        
+        for train_input, train_label in tqdm(train_dataloader):
+            train_label = train_label.to(device)
+            mask = train_input['attention_mask'].to(device)
+            input_id = train_input['input_ids'].squeeze(1).to(device)
+            
+            output = model(input_id, mask)
+            
+            batch_loss = criterion(output, train_label.long())
+            total_loss_train += batch_loss.item()
+            
+            acc = (output.argmax(dim=1) == train_label).sum().item()
+            total_acc_train += acc
+            
+            model.zero_grad()
+            batch_loss.backward()
+            optimizer.step()
+            
+        total_acc_val = 0
+        total_loss_val = 0
+        
+        with torch.no_grad():
+            for val_input, val_label in val_dataloader:
+                val_label = val_label.to(device)
+                mask = val_input['attention_mask'].to(device)
+                input_id = val_input['input_ids'].squeeze(1).to(device)
+                
+                output = model(input_id, mask)
+                
+                batch_loss = criterion(output, val_label.long())
+                acc = (output.argmax(dim=1) == val_label).sum().item()
+                total_loss_val += batch_loss.item()
+                total_acc_val += acc
+                
+        print(f'Epochs: {epoch_num + 1} | train_loss: {total_loss_train / len(train_data): .3f} \
+        | train_accuracy: {total_acc_train / len(train_data): .3f} \
+        | val_loss: {total_loss_val / len(val_data): .3f} \
+        | val_accuracy: {total_acc_val / len(val_data): .3f}')
+        
+        
+EPOCHS = 3
+BATCH_SIZE = 64
+model = SentenceMultiCls()
+LR = 3e-6
+
+train(model, df_train, df_val, LR, EPOCHS, BATCH_SIZE)
+
+end = time()
+
+print(output)
+print(end - start)
+print('finished')
+
