@@ -1,0 +1,234 @@
+Hadoop2 HDFS shell命令
+
+ 
+
+1. hdfs dfs -appendToFile ...
+
+可同时上传多个文件到HDFS里面
+
+ 
+
+2.  hdfs dfs -cat URI [URI ...]
+
+查看文件内容
+
+ 
+
+3. hdfs dfs -chgrp [-R] GROUP URI [URI ...]
+
+修改文件所属组
+
+ 
+
+4.  hdfs dfs -chmod [-R] URI [URI ...]
+
+修改文件权限
+
+ 
+
+5. hdfs dfs -chown [-R] [OWNER][:[GROUP]] URI [URI ]
+
+修改文件所有者，文件所属组，其他用户的读、写、执行权限
+
+ 
+
+6. hdfs dfs -copyFromLocal URI
+
+复制文件到hdfs
+
+ 
+
+7.  hdfs dfs -copyToLocal [-ignorecrc] [-crc] URI
+
+复制文件到本地
+
+ 
+
+8. hdfs dfs -count [-q]
+
+统计文件及文件夹数目
+
+ 
+
+9.  hdfs dfs -cp [-f] URI [URI ...]
+
+Hadoop HDFS 文件系统间的文件复制
+
+ 
+
+10. hdfs dfs -du [-s] [-h] URI [URI ...]
+
+统计目录下的文件及大小
+
+ 
+
+11. hdfs dfs -dus
+
+汇总目录下的文件总大小
+
+ 
+
+12.  hdfs dfs -expunge
+
+清空回收站，文件被删除时，它首先会移到临时目录.Trash/中，当超过延迟时间之后，文件才会被永久删除
+
+ 
+
+13. hdfs dfs -get [-ignorecrc] [-crc]
+
+下载文件到本地
+
+ 
+
+14. hdfs dfs -getfacl [-R]
+
+查看ACL （访问权限组拥有者）
+
+ 
+
+15. hdfs dfs -getmerge [addnl]
+
+合并下载文件到本地
+
+ 
+
+16. hdfs dfs -ls
+
+查看目录
+
+ 
+
+17. hdfs dfs -lsr
+
+循环列出目录、子目录及文件信息 
+
+ 
+
+18. hdfs dfs -mkdir [-p]
+
+创建空白文件夹
+
+ 
+
+19.  dfs -moveFromLocal
+
+剪切文件到hdfs
+
+ 
+
+20.  hdfs dfs -moveToLocal [-crc]
+
+剪切文件到本地
+
+ 
+
+21. hdfs dfs -mv URI [URI ...]
+
+剪切hdfs文件
+
+ 
+
+22. hdfs dfs -put ...
+
+上传文件
+
+ 
+
+23. hdfs dfs -rm [-skipTrash] URI [URI ...]
+
+删除文件/空白文件夹
+
+ 
+
+24.  hdfs dfs -rmr [-skipTrash] URI [URI ...]
+
+递归删除  删除文件及文件夹下的所有文件
+
+ 
+
+25. hdfs dfs -setfacl [-R] [-b|-k -m|-x ]|[--set ]
+
+ 
+
+Sets Access Control Lists (ACLs) of files and directories.
+
+Options:
+
+-b: Remove all but the base ACL entries. The entries for user, group and others are retained for compatibility with permission bits.
+
+-k: Remove the default ACL.
+
+-R: Apply operations to all files and directories recursively.
+
+-m: Modify ACL. New entries are added to the ACL, and existing entries are retained.
+
+-x: Remove specified ACL entries. Other ACL entries are retained.
+
+--set: Fully replace the ACL, discarding all existing entries. The acl_spec must include entries for user, group, and others for compatibility with permission bits.
+
+acl_spec: Comma separated list of ACL entries.
+
+path: File or directory to modify.
+
+Examples:
+
+hdfs dfs -setfacl -m user:hadoop:rw- /file
+
+hdfs dfs -setfacl -x user:hadoop /file
+
+hdfs dfs -setfacl -b /file
+
+hdfs dfs -setfacl -k /dir
+
+hdfs dfs -setfacl --set user::rw-,user:hadoop:rw-,group::r--,other::r-- /file
+
+hdfs dfs -setfacl -R -m user:hadoop:r-x /dir
+
+hdfs dfs -setfacl -m default:user:hadoop:r-x /dir
+
+Exit Code:
+
+Returns 0 on success and non-zero on error.
+
+ 
+
+26.  hdfs dfs -setrep [-R] [-w]
+
+修改副本数
+
+ 
+
+27. hdfs dfs -stat URI [URI ...]
+
+显示文件统计信息
+
+ 
+
+28.  hdfs dfs -tail [-f] URI
+
+查看文件尾部信息
+
+ 
+
+29. hdfs dfs -test -[ezd] URI
+
+对PATH进行如下类型的检查： 
+
+-e PATH是否存在，如果PATH存在，返回0，否则返回1 
+
+-z 文件是否为空，如果长度为0，返回0，否则返回1 
+
+-d 是否为目录，如果PATH为目录，返回0，否则返回1 
+
+ 
+
+30. hdfs dfs -text
+
+查看文件内容
+
+ 
+
+31.  hdfs dfs -touchz URI [URI ...]
+
+创建长度为0的空文件
+
